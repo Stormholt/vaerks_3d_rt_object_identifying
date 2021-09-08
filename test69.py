@@ -10,17 +10,17 @@ voxel_size = 0.01 # 1cm
 # smaller = longer cpu time and worse registration.
 
 def preprocess_point_cloud(pcd, voxel_size):
-    print(":: Downsample with a voxel size %.3f." % voxel_size)
+   # print(":: Downsample with a voxel size %.3f." % voxel_size)
     pcd_down = pcd.voxel_down_sample(voxel_size)
     cl, ind = pcd_down.remove_statistical_outlier(nb_neighbors=10, # neighbours in consideration, Higher = aggressive
                                                     std_ratio=0.01) # Threshold based on deviation of avg. dist. lower = aggressive
     radius_normal = voxel_size * 2
-    print(":: Estimate normal with search radius %.3f." % radius_normal)
+   # print(":: Estimate normal with search radius %.3f." % radius_normal)
     pcd_down.estimate_normals(
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
     
     radius_feature = voxel_size * 5
-    print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
+   # print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
     pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
         pcd_down,
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
@@ -28,7 +28,7 @@ def preprocess_point_cloud(pcd, voxel_size):
     return pcd_down, pcd_fpfh
 
 def prepare_dataset(voxel_size, source, target):
-    print(":: Load two point clouds and disturb initial pose.")
+   # print(":: Load two point clouds and disturb initial pose.")
     trans_init = np.asarray([[0.0, 0.0, 1.0, 0.0], 
                              [1.0, 0.0, 0.0, 0.0],
                              [0.0, 1.0, 0.0, 0.0], 
@@ -43,9 +43,9 @@ def prepare_dataset(voxel_size, source, target):
 def execute_global_registration(source_down, target_down, source_fpfh,
                                 target_fpfh, voxel_size):
     distance_threshold = voxel_size * 1.5
-    print(":: RANSAC registration on downsampled point clouds.")
-    print("   Since the downsampling voxel size is %.3f," % voxel_size)
-    print("   we use a liberal distance threshold %.3f." % distance_threshold)
+   # print(":: RANSAC registration on downsampled point clouds.")
+   # print("   Since the downsampling voxel size is %.3f," % voxel_size)
+   # print("   we use a liberal distance threshold %.3f." % distance_threshold)
     result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
         source_down, target_down, source_fpfh, target_fpfh, True,
         distance_threshold,
@@ -60,9 +60,9 @@ def execute_global_registration(source_down, target_down, source_fpfh,
 
 def refine_registration(source, target, source_fpfh, target_fpfh, voxel_size, result_ransac):
     distance_threshold = voxel_size * 0.4
-    print(":: Point-to-plane ICP registration is applied on original point")
-    print("   clouds to refine the alignment. This time we use a strict")
-    print("   distance threshold %.3f." % distance_threshold)
+   # print(":: Point-to-plane ICP registration is applied on original point")
+   # print("   clouds to refine the alignment. This time we use a strict")
+    #print("   distance threshold %.3f." % distance_threshold)
 
     src_normal = source.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
     tar_normal = target.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
@@ -204,8 +204,8 @@ class D435():
                 pcloud.pcd, self.pcdmodel, source_down, target_down, source_fpfh, target_fpfh = prepare_dataset(voxel_size, pcloud.pcd, self.pcdmodel)
                 result_ransac = execute_global_registration(source_down, target_down, source_fpfh, target_fpfh,voxel_size)
                 pcloud.pcd = pcloud.pcd.transform(result_ransac.transformation)
-                result_icp = refine_registration(pcloud.pcd, self.pcdmodel, source_fpfh, target_fpfh, voxel_size, result_ransac)
-                pcloud.pcd = pcloud.pcd.transform(result_icp.transformation)
+               # result_icp = refine_registration(pcloud.pcd, self.pcdmodel, source_fpfh, target_fpfh, voxel_size, result_ransac)
+               # pcloud.pcd = pcloud.pcd.transform(result_icp.transformation)
                 self.pcdmodel = self.pcdmodel + pcloud.pcd
             
             filename = "./pointclouds/pointCloud.pcd"
@@ -284,22 +284,22 @@ class D435():
         cv2.imwrite(filename, self.images)
         self.imgs_generated= self.imgs_generated + 1
         
-
     def snapshot(self):
         
         self.generateImg()
         self.generatePCD()
 
     def visualizeMothership(self,source):
-        source_tmp = copy.deepcopy(source)
-        source_tmp.paint_uniform_color([1, 0.706, 0])
-        o3d.visualization.draw_geometries([source_tmp],
-                                      zoom=0.4459,
-                                      front=[0.9288, -0.2951, -0.2242],
-                                      lookat=[1.6784, 2.0612, 1.4451],
-                                      up=[-0.3402, -0.9189, -0.1996])   
-        #Press 'n' to see normals, press '+' and '`' to change voxel size.
-        # 'Rigth mouse' rotates, 'mouse wheel' drags
+        if not source.is_empty():
+            source_tmp = copy.deepcopy(source)
+            source_tmp.paint_uniform_color([1, 0.706, 0])
+            o3d.visualization.draw_geometries([source_tmp],
+                                        zoom=0.4459,
+                                        front=[0.9288, -0.2951, -0.2242],
+                                        lookat=[1.6784, 2.0612, 1.4451],
+                                        up=[-0.3402, -0.9189, -0.1996])   
+            # Press 'n' to see normals, press '+' and '`' to change voxel size.
+            # 'Rigth mouse' rotates, 'mouse wheel' drags
 
         
 camera = D435()   
