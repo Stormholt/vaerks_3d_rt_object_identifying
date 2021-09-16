@@ -82,6 +82,19 @@ class Pcloud():
         self.tvector = [x,y,z]
 
         self.pcd = o3d.geometry.PointCloud()
+    
+    def trimCloudZ(self,z_threshold):
+        points = np.asarray(self.pcd.points)
+
+        pcd_sel = self.pcd.select_by_index(np.where(points[:, 2] < z_threshold)[0])
+
+# visualize different point clouds
+        o3d.visualization.draw_geometries([self.pcd])
+        o3d.visualization.draw_geometries([pcd_sel])        
+       # for i in range (points.size -1):
+        #    if points[i][2] > 0.4 :
+         #       np.delete(np.asarray(self.pcd.points), i)
+        
 
 
 # Camera class 
@@ -95,17 +108,15 @@ class D435():
         self.rgb_im_height = 480
         self.rgb_framerate = 30 
 
+        self.depth_threshold = 0.5 #50 cm 
+
         self.pipeline = rs.pipeline()   #The pipeline simplifies the user interaction with the device and computer vision processing modules
         self.config = rs.config()       # The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
+        self.device = rs.device()
         self.pc = rs.pointcloud() # Init pointcloud 
         self.pcdmodel = o3d.geometry.PointCloud() # Final pointcloud
         self.pcloud_array = []
         self.colorizer = rs.colorizer() # Colorizer filter generates color images based on input depth frame
-        # Get device product line for setting a supporting resolution
-        #self.pipeline_wrapper = rs.pipeline_wrapper(self.pipeline)
-        #self.pipeline_profile = self.config.resolve(self.pipeline_wrapper)
-        #self.device = self.pipeline_profile.get_device()
-        #self.device_product_line = str(self.device.get_info(rs.camera_info.product_line))
 
         self.config.enable_stream(rs.stream.depth, self.depth_im_width, self.depth_im_height, rs.format.z16, self.depth_framerate) # Setup depth stream
         self.config.enable_stream(rs.stream.color, self.rgb_im_width, self.rgb_im_height, rs.format.bgr8, self.rgb_framerate)
@@ -145,6 +156,7 @@ class D435():
         self.pipeline.start(self.config) # Start the pipeline streaming according to the configuration
         self.align = rs.align(rs.stream.color) # Align depth image to other 
 
+
     #Stop streaming
     def release(self):
         self.pipeline.stop()
@@ -175,11 +187,12 @@ class D435():
     def generatePCD(self):
         
         wtf = Pcloud(self.x,self.y,self.z)
-        wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.depth_frame_open3d,self.intrinsic) # Creating pointcloud from depth image
+        wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.depth_frame_open3d,self.intrinsic) # Creating pointcloud from depth 
+        wtf.trimCloud(self.depth_threshold)
         wtf.pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.01,max_nn=30)) # Calculates normals of every point. 
         wtf.pcd.orient_normals_towards_camera_location(camera_location=np.array([0., 0., 0.])) 
 
-        self.y = self.y +0.05
+        self.y = self.y + 0.05
         #self.calcPosition(self.dist,self.angle)
         #self.calcRmatrix()
         #wtf.rotate(self.rmatrix, (0, 0, 0))
@@ -255,6 +268,7 @@ class D435():
     def stream(self):
         self.frames = self.pipeline.wait_for_frames()# Wait for a coherent pair of frames: depth and color
         self.frames = self.align.process(self.frames) # Aligns frames
+
         self.depth_frame = self.frames.get_depth_frame() #Extract frames
         self.color_frame = self.frames.get_color_frame()
 
@@ -263,7 +277,8 @@ class D435():
         self.color_image = np.asanyarray(self.color_frame.get_data())
         self.depth_frame_open3d = o3d.geometry.Image(self.depth_image) # Create opend3d image obejct from depth image
         # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-        self.depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.03), cv2.COLORMAP_TURBO) # 
+        self.depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.03), cv2.COLORMAP_TURBO) 
+
 
         self.depth_colormap_dim = self.depth_colormap.shape
         self.color_colormap_dim = self.color_image.shape
@@ -277,7 +292,7 @@ class D435():
         # Show images
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', self.images)
-    
+
     def generateImg(self):
          
         filename = "images/"+ str(self.imgs_generated)+".png"

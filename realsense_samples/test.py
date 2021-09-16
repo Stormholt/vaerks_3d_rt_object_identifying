@@ -23,7 +23,8 @@ while True:
     
     cv2.circle(color_frame, point, 4, (0, 0, 255))
     distance = depth_frame[point[1], point[0]]
-    cv2.putText(color_frame, "{}mm".format(distance), (point[0], point[1] - 20), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 0), 2)
+   # cv2.putText(color_frame, "{}mm at X{} Y {}".format(distance, point[0],point[1]), (point[0], point[1] - 20), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 0), 2)
+    cv2.putText(color_frame,  "{},{}".format( point[0],point[1]), (point[0], point[1] - 20), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 0), 2)
     print(distance)
 
     cv2.imshow("depth frame",depth_frame)
