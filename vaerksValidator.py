@@ -17,6 +17,11 @@ depth_threshold = 0.4 #40 cm
 class App():
         
     def __init__(self, rootdir):
+        self.root= rootdir
+        self.pcd_path = self.root +"/pointclouds/"
+        self.model_path = self.root + "/3dmodels/"
+        self.img_path = self.root + "/images/"
+
         self.camera = d435.D435()
         self.pcdmodel = o3d.geometry.PointCloud() # Final pointcloud
         self.pcloud_array = []
@@ -28,13 +33,6 @@ class App():
         self.table = o3d.geometry.PointCloud()
         self.scene = Pcloud()
         self.scene.pcd = o3d.io.read_point_cloud("./pointclouds/notmiwire_scene_2.ply")
-        self.root= rootdir
-        self.pcd_path = self.root +"/pointclouds/"
-        self.model_path = self.root + "/3dmodels/"
-        self.img_path = self.root + "/images/"
-        self.x = 0.0  
-        self.y = 0.0  
-        self.z = 0.0 
 
     class Filetype(enum.Enum):
         PCD = 0
