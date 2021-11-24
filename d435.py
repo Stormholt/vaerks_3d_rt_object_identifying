@@ -52,7 +52,7 @@ class D435():
         self.px, self.py = self.depth_intrinsics.ppx,self.depth_intrinsics.ppy # Horizontal and vertical coordinate of the principal point of the image, as a pixel offset from the left edge and the top edge, Basicly center of the image
         self.intrinsic = o3d.camera.PinholeCameraIntrinsic(self.w,self.h,self.fx,self.fy,self.px,self.py) # Create Open3d intrinsic object
         
-        self.plys_generated = 2 # Counter for .ply files generated
+        self.plys_generated = 0 # Counter for .ply files generated
         self.imgs_generated = 0
         
         #camera position
@@ -129,9 +129,9 @@ class D435():
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', self.images)
 
-    def generateImg(self):
+    def generateImg(self, dir):
          
-        filename = "tensorflow/images/train/"+ str(self.imgs_generated)+".png"
+        filename = dir + str(self.imgs_generated)+".png"
         cv2.imwrite(filename, self.images)
         self.imgs_generated= self.imgs_generated + 1
         
@@ -139,5 +139,10 @@ class D435():
         
         self.generateImg()
         #self.generatePCD()
+
+    def updatePosition(self,x,y,z):
+        self.x = x
+        self.y = y
+        self.z = z
 
    

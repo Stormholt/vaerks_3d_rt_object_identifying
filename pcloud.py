@@ -5,6 +5,7 @@ import numpy as np
 table_filter_threshold = 3
 bbox_filter_threshold = 6
 bg_threshold =  0.4 #40 cm 
+voxel_size = 0.01 # 1cm # smaller = longer cpu time and worse registration.
 class Pcloud():
     def __init__(self ):
 
@@ -23,7 +24,7 @@ class Pcloud():
         points = np.asarray(self.pcd.points)
         self.pcd = self.pcd.select_by_index(np.where(points[:, 2] < bg_threshold)[0])
     
-    def process_point_cloud(self, voxel_size, model, table ):
+    def process_point_cloud(self, model, table ):
         self.filter_by_background()
     
         radius_normal = voxel_size * 2
@@ -36,7 +37,8 @@ class Pcloud():
                         [0,0,-1]]) # 180° counterclockwise about the origin, Mirroring about the origin
         #self.pcd.translate([(14.7*2),(-14.2*4),-29.5])notmiwire_scene_0
         #self.pcd.translate([147*1.18,142*0.7,1.5],False) notmiwire_scene_0
-        self.pcd.translate([157*1.22,142*0.7,0],False)#notmiwire_scene_1
+        #self.pcd.translate([157*1.22,142*0.7,0],False)#notmiwire_scene_0
+        self.pcd.translate(self.tvector,False)
         self.pcd = self.filter_by_pointcloud(self.pcd, table)
         self.pcd = self.filter_by_model_bbox(self.pcd, model)
     

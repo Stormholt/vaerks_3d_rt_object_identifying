@@ -25,14 +25,14 @@ class App():
         self.camera = d435.D435()
         self.pcdmodel = o3d.geometry.PointCloud() # Final pointcloud
         self.pcloud_array = []
-        self.plys_generated = 2
+        self.plys_generated = 0
         self.pcds_generated = 0 # Counter for .pcd files generated
         self.stls_generated = 0 # Counter for .stl files generated
         self.imgs_generated = 0 # Counter for .png files generated
         self.model = o3d.geometry.PointCloud()
         self.table = o3d.geometry.PointCloud()
         self.scene = Pcloud()
-        self.scene.pcd = o3d.io.read_point_cloud("./pointclouds/notmiwire_scene_2.ply")
+        #self.scene.pcd = o3d.io.read_point_cloud(self.pcd_path + "notmiwire_scene_2.ply")
 
     class Filetype(enum.Enum):
         PCD = 0
@@ -50,11 +50,14 @@ class App():
             print("Cant save pointcloud: Its Empty")
 
 
+    
+
     def generatePointCloud(self, filetype, name):
         wtf = Pcloud()
         wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.camera.depth_frame_open3d,self.camera.intrinsic) # Creating pointcloud from depth 
+        #wtf.x = self.camera.x
         wtf.updateTvector()
-        wtf.process_point_cloud(voxel_size, self.model, self.table)
+        wtf.process_point_cloud( self.model, self.table)
         self.scene.pcd += wtf.pcd
         if (filetype == self.Filetype.PCD):
             filename = self.pcd_path + name +"_"+ str(self.pcds_generated) + ".pcd"
@@ -66,6 +69,26 @@ class App():
 
         o3d.io.write_point_cloud(filename,wtf.pcd)
 
+    def captureScenePointcloud(self):
+        wtf = Pcloud()
+        wtf.x = self.camera.x
+        wtf.y =  self.camera.y
+        wtf.z = self.camera.z # 255 + self.camera
+        wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.camera.depth_frame_open3d,self.camera.intrinsic) # Creating pointcloud from depth 
+        #wtf.x += self.camera.x
+        wtf.updateTvector()
+        wtf.process_point_cloud( self.model, self.table)
+        self.scene.pcd += wtf.pcd
+
+    def saveScenePointcloud(self, filetype, name):
+        if (filetype == self.Filetype.PCD):
+            filename = self.pcd_path + name +"_"+ str(self.pcds_generated) + ".pcd"
+        elif (filetype == self.Filetype.PLY):
+            filename = self.pcd_path + name +"_"+ str(self.plys_generated) + ".ply"
+        else:
+            print("Unsupported filetype for saving pointclouds")
+            return
+        o3d.io.write_point_cloud(filename,self.scene.pcd)
 
     def genRegMothership(self):# Generate translated and registrated mothership 
         if self.pcloud_array :
