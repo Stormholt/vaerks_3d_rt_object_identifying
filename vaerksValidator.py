@@ -55,25 +55,30 @@ class App():
     def generatePointCloud(self, filetype, name):
         wtf = Pcloud()
         wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.camera.depth_frame_open3d,self.camera.intrinsic) # Creating pointcloud from depth 
-        #wtf.x = self.camera.x
+        wtf.x = self.camera.x
+        wtf.y =  self.camera.y
+        wtf.z = self.camera.z 
         wtf.updateTvector()
         wtf.process_point_cloud( self.model, self.table)
         self.scene.pcd += wtf.pcd
         if (filetype == self.Filetype.PCD):
             filename = self.pcd_path + name +"_"+ str(self.pcds_generated) + ".pcd"
+            self.pcds_generated += 1
         elif (filetype == self.Filetype.PLY):
             filename = self.pcd_path + name +"_"+ str(self.plys_generated) + ".ply"
+            self.plys_generated+=1
         else:
             print("Unsupported filetype for saving pointclouds")
             return
 
         o3d.io.write_point_cloud(filename,wtf.pcd)
+        
 
     def captureScenePointcloud(self):
         wtf = Pcloud()
         wtf.x = self.camera.x
         wtf.y =  self.camera.y
-        wtf.z = self.camera.z # 255 + self.camera
+        wtf.z = self.camera.z 
         wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.camera.depth_frame_open3d,self.camera.intrinsic) # Creating pointcloud from depth 
         #wtf.x += self.camera.x
         wtf.updateTvector()
@@ -174,6 +179,8 @@ class App():
     def compareScene2Model(self):
         if not (self.scene.pcd.is_empty() or self.model.is_empty()):
             distance = self.scene.pcd.compute_point_cloud_distance(self.model)
+            haussdorf = max(distance)
+            print("Haussdorf distance = " + haussdorf + "\n")
             df = pd.DataFrame({"distances": distance}) # transform to a dataframe
             # Some graphs
             ax1 = df.boxplot(return_type="axes") # BOXPLOT

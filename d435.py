@@ -17,7 +17,7 @@ class D435():
 
         self.depth_im_width = 848   #Image dimensions
         self.depth_im_height = 480
-        self.depth_framerate = 10 
+        self.depth_framerate = 30 
         #self.rgb_im_width = 640
         #self.rgb_im_height = 480
         #self.rgb_framerate = 30 

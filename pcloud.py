@@ -39,10 +39,15 @@ class Pcloud():
         #self.pcd.translate([147*1.18,142*0.7,1.5],False) notmiwire_scene_0
         #self.pcd.translate([157*1.22,142*0.7,0],False)#notmiwire_scene_0
         self.pcd.translate(self.tvector,False)
-        self.pcd = self.filter_by_pointcloud(self.pcd, table)
-        self.pcd = self.filter_by_model_bbox(self.pcd, model)
+        #self.pcd = self.filter_by_pointcloud(self.pcd, table)
+        #self.pcd = self.filter_by_model_bbox(self.pcd, model)
     
-
+    def downsample_pointcloud(self, number_of_points): # NOT TESTED
+        num_pcd_points= len(np.asarray(self.pcd.points))
+        downsamplefactor = num_pcd_points /  number_of_points
+        if downsamplefactor > 2:
+            self.pcd = self.pcd.uniform_down_sample(downsamplefactor) # Parameter: "Every k points"
+        return
 
     def filter_by_pointcloud(self, scene, pointcloud): # Removes 
         

@@ -24,7 +24,6 @@ finally:
     o3d.visualization.draw_geometries([main.scene.pcd + model_color])
     main.compareScene2Model()
     
-
     print("TWO")
     main.scene.pcd = o3d.io.read_point_cloud(main.pcd_path +"vice-scene-setupv3_0.ply")
     main.scene.tvector = [170, 60, 60.5]
@@ -32,6 +31,7 @@ finally:
     main.saveScenePointcloud(main.Filetype.PLY,"scene-vice-maho-v3")
     o3d.visualization.draw_geometries([main.scene.pcd + model_color])
     main.compareScene2Model()
+    
     print("THREE")
     main.scene.pcd = o3d.io.read_point_cloud(main.pcd_path +"vice-scene-setupv4_0.ply")
     main.scene.tvector = [170, 140, 41.5]
