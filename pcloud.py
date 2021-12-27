@@ -27,20 +27,17 @@ class Pcloud():
     def process_point_cloud(self, model, table ):
         self.filter_by_background()
     
-        radius_normal = voxel_size * 2
-        self.pcd.estimate_normals( o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
-        self.pcd.orient_normals_towards_camera_location(camera_location=np.array([0., 0., 0.])) 
+        #radius_normal = voxel_size * 2
+        #self.pcd.estimate_normals( o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+        #self.pcd.orient_normals_towards_camera_location(camera_location=np.array([0., 0., 0.])) 
     
         self.pcd.scale(1000,np.asarray(self.pcd.points)[0])
-        self.pcd.rotate([[-1,0,0],
-                        [0,-1,0],
-                        [0,0,-1]]) # 180° counterclockwise about the origin, Mirroring about the origin
-        #self.pcd.translate([(14.7*2),(-14.2*4),-29.5])notmiwire_scene_0
-        #self.pcd.translate([147*1.18,142*0.7,1.5],False) notmiwire_scene_0
-        #self.pcd.translate([157*1.22,142*0.7,0],False)#notmiwire_scene_0
+        self.pcd.rotate([[-1,0,0],[0,-1,0],[0,0,-1]]) # 180° counterclockwise about the origin, Mirroring about the origin
+
         self.pcd.translate(self.tvector,False)
-        #self.pcd = self.filter_by_pointcloud(self.pcd, table)
-        #self.pcd = self.filter_by_model_bbox(self.pcd, model)
+        self.pcd = self.filter_by_pointcloud(self.pcd, table)
+        self.pcd = self.filter_by_model_bbox(self.pcd, model)
+        return
     
     def downsample_pointcloud(self, number_of_points): # NOT TESTED
         num_pcd_points= len(np.asarray(self.pcd.points))

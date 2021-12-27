@@ -5,8 +5,8 @@ import open3d as o3d
 import vaerksValidator
 import copy
     
-main = vaerksValidator.App(r"C:\Users\Stormholt\Documents\Thesis")
-model ="vice-maho-offsettest-v1.ply"
+main = vaerksValidator.App(r"C:\Users\Stormholt\Documents\Thesis", True)
+model ="comp-test-model.ply"
 table = "table_under_origo_dense.ply"
 
 #main.loadPointClouds(15)
@@ -46,30 +46,34 @@ try:
     #main.camera.y = 185
     #main.camera.z = 15 +12 #38 + 248 +15
     
+    main.camera.x= 125# - 17.5
+    main.camera.y = 82
+    main.camera.z = -24 #+ main.camera.depth_startpoint_offset #265
+    
     while True:
         main.camera.stream()
         key = cv2.waitKey(1)
         if key == 27:
             break
         if key == 32:
-            #main.captureScenePointcloud()
+            main.captureScenePointcloud()
             
            # main.camera.snapshot()
             #main.camera.generatePLY()
             #main.camera.generateOpen3DPLY()
            
-           main.generatePointCloud(main.Filetype.PLY,"translation_y_test")
+           #main.generatePointCloud(main.Filetype.PLY,"comparison-test")
            
-           print(main.plys_generated)
-           #main.camera.z += 2.0
+            print(main.plys_generated)
+            main.camera.y += 4.0
 finally:
     #main.genTransMothership()
     #scene = o3d.io.read_point_cloud(main.pcd_path +"notmiwire_scene_2.ply")
-   # main.saveScenePointcloud(main.Filetype.PLY,"scene-vice-maho")
-   # model_color = copy.deepcopy(main.model)
-    #model_color.paint_uniform_color([1., 0.706, 0.])
-   # o3d.visualization.draw_geometries([main.scene.pcd + model_color])
-   # main.compareScene2Model()
+    main.saveScenePointcloud(main.Filetype.PLY,"comparison-scene-test0")
+    model_color = copy.deepcopy(main.model)
+    model_color.paint_uniform_color([1., 0.706, 0.])
+    o3d.visualization.draw_geometries([main.scene.pcd + model_color])
+    main.compareScene2Model()
     main.camera.release()
 
 

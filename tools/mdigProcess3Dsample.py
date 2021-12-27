@@ -46,6 +46,7 @@ class HookDataStruct(ctypes.Structure):
       ("MilContainerDisp", MIL.MIL_ID),
       ("MilMapContext",MIL.MIL_ID),
       ("MilMapResult", MIL.MIL_ID),
+      ("MilImage", MIL.MIL_ID),
       ("ProcessedImageCount", MIL.MIL_INT)]
 
 # Number of images in the buffering grab queue.
@@ -57,7 +58,7 @@ array = (ctypes.c_float*3)(100)
 print(array)
 #number_scans = 0
 filename2 = MIL.MIL_TEXT("C:/Users/Stormholt/Documents/Thesis/pointclouds/matrox-test.ply")
-
+seq_filename = MIL.MIL_TEXT("C:/Users/Stormholt/Documents/Thesis/matrox-test0.avi")
 # User's processing function called every time a grab buffer is ready.
 # --------------------------------------------------------------------
 
@@ -79,12 +80,16 @@ def ProcessingFunction(HookType, HookId, HookDataPtr):
    
    # Execute the processing and update the display.
    MIL.MbufConvert3d(ModifiedBufferId, UserData.MilContainerDisp, MIL.M_NULL, MIL.M_DEFAULT, MIL.M_COMPENSATE)
+   MIL.MbufCopyColor(ModifiedBufferId, UserData.MilImage, MIL.M_ALL_BANDS)
    #filename = MIL.MIL_TEXT("C:/Users/Stormholt/Documents/Thesis/pointclouds/matrox-test{:d}.ply".format(UserData.ProcessedImageCount))
    #MIL.MbufExport(filename, MIL.M_PLY_ASCII, UserData.MilContainerDisp)
-
+   MIL.MbufExportSequence(seq_filename, MIL.M_DEFAULT, UserData.MilImage, 1, MIL.M_DEFAULT, MIL.M_WRITE)
    #MIL.MbufInquire(UserData.MilContainerDisp, MIL.M_ARRAY, ctypes.cast(array, ctypes.POINTER(ctypes.c_void_p)))
    #MIL.MbufSetRegion(ModifiedBufferId,MIL.M_NULL,MIL.M_DEFAULT,MIL.M_DELETE,MIL.M_DEFAULT)
    #MIL.MbufGet(ModifiedBufferId,ctypes.cast(array, ctypes.POINTER(ctypes.c_void_p)))
+   
+   #MIL.M3dmapAddScan(UserData.MilMapContext, UserData.MilMapResult, UserData.MilContainerDisp, MIL.M_NULL, MIL.M_NULL, MIL.M_POINT_CLOUD_LABEL(UserData.ProcessedImageCount), MIL.M_DEFAULT  )
+   
    
    return 0
    
@@ -96,7 +101,10 @@ def MdigProcessExample():
    MilApplication = MIL.MappAlloc(MIL.MIL_TEXT("M_DEFAULT"), MIL.M_DEFAULT, None)
    MilSystem = MIL.MsysAlloc(MIL.M_DEFAULT, MIL.M_SYSTEM_DEFAULT, MIL.M_DEFAULT, MIL.M_DEFAULT, None)
 
-   status, MilDisplay, MilContainerDisp = Alloc3dDisplayAndContainer(MilSystem)
+   status, MilDisplay, MilContainerDisp, MilMapContext, MilMapResult = Alloc3dDisplayAndContainer(MilSystem)
+   
+   
+   
    if status == False:
       MIL.MsysFree(MilSystem)
       MIL.MappFree(MilApplication)
@@ -104,6 +112,9 @@ def MdigProcessExample():
       return
 
    MilDigitizer = MIL.MdigAlloc(MilSystem, MIL.M_DEFAULT, MIL.MIL_TEXT("M_DEFAULT"), MIL.M_DEFAULT, None)
+   
+   MilImage = MIL.MbufAllocColor(MilSystem, MIL.MdigInquire(MilDigitizer, MIL.M_SIZE_BAND, MIL.M_NULL), MIL.MdigInquire(MilDigitizer,MIL.M_SIZE_X, MIL.M_NULL), MIL.MdigInquire(MilDigitizer, MIL.M_SIZE_Y, MIL.M_NULL), 8+MIL.M_UNSIGNED, MIL.M_IMAGE, MIL.M_NULL)
+   
      
    # Print a message.
    print("\nMULTIPLE 3D CONTAINERS PROCESSING.")
@@ -141,8 +152,8 @@ def MdigProcessExample():
             break
 
       # Initialize the user's processing function data structure.
-      UserHookData = HookDataStruct(MilDigitizer, MilContainerDisp, 0)
-
+      UserHookData = HookDataStruct(MilDigitizer, MilContainerDisp, MilMapContext, MilMapResult, MilImage, 0)
+      MIL.MbufExportSequence(seq_filename,MIL. M_DEFAULT, MIL.M_NULL, MIL.M_NULL, MIL.M_DEFAULT,MIL. M_OPEN)
       # Start the processing.  The processing function is called with every
       # frame grabbed.
       ProcessingFunctionPtr = MIL.MIL_DIG_HOOK_FUNCTION_PTR(ProcessingFunction)
@@ -160,17 +171,21 @@ def MdigProcessExample():
       # Print a message and wait for a key press after a minimum number of
       # frames.
       MIL.MdigProcess(MilDigitizer, MilGrabBufferList, MilGrabBufferListSize, MIL.M_STOP, MIL.M_DEFAULT, ProcessingFunctionPtr, ctypes.byref(UserHookData))
-
+     
       # Print statistics.
       ProcessFrameCount = MIL.MdigInquire(MilDigitizer, MIL.M_PROCESS_FRAME_COUNT, None)
       ProcessFrameRate = MIL.MdigInquire(MilDigitizer, MIL.M_PROCESS_FRAME_RATE, None)
       print("\n{:d} 3D containers grabbed at {:.1f} frames/sec ({:.1f} ms/frame)".format(ProcessFrameCount, ProcessFrameRate, 1000.0 / ProcessFrameRate))
       get_input("Press <Enter> to end.\n")
+      MIL.MbufExportSequence(seq_filename,  MIL.M_DEFAULT,  MIL.M_NULL,  MIL.M_NULL, ProcessFrameRate,  MIL.M_CLOSE)
 
-      print(np.asarray(array))
-      for i in range(0, len(MilContainerDisp)):
-         filename2 = MIL.MIL_TEXT("C:/Users/Stormholt/Documents/Thesis/pointclouds/matrox-test"+str(i)+".ply")
-         MIL.MbufExport(filename2, MIL.M_PLY_ASCII, MilContainerDisp[i])
+      #MIL.MbufExportSequence(seq_filename,MIL.M_AVI_MIL, )
+      #MIL.MbufGet(MilContainerDisp,ctypes.cast(array, ctypes.POINTER(ctypes.c_void_p)))
+      #MIL.M3dmapCopyResult(MilMapResult,MIL.M_ALL,UserHookData.MilContainerDisp, MIL.M_POINT_CLOUD_UNORGANIZED ,MIL.M_NO_REFLECTANCE)
+      #print(np.asarray(array))
+      #for i in range(0, len(MilContainerDisp)):
+      #   filename2 = MIL.MIL_TEXT("C:/Users/Stormholt/Documents/Thesis/pointclouds/matrox-test"+str(i)+".ply")
+      #   MIL.MbufExport(filename2, MIL.M_PLY_ASCII, MilContainerDisp[i])
       
       # Free the grab buffers.
       for id in range(0, MilGrabBufferListSize):
@@ -182,6 +197,9 @@ def MdigProcessExample():
    # Release defaults.
    MIL.MbufFree(MilContainerDisp)
    MIL.M3ddispFree(MilDisplay)
+   MIL.M3dmapFree(MilMapContext)
+   MIL.M3dmapFree(MilMapResult)
+   
    MIL.MdigFree(MilDigitizer)
    MIL.MsysFree(MilSystem)
    MIL.MappFree(MilApplication)
@@ -251,7 +269,8 @@ def Alloc3dDisplayAndContainer(MilSystem):
    MilDisplay = MIL.M3ddispAlloc(MilSystem, MIL.M_DEFAULT, MIL.MIL_TEXT("M_DEFAULT"), MIL.M_DEFAULT, MIL.M_NULL)
    MilContainerDisp = MIL.MbufAllocContainer(MilSystem, MIL.M_PROC + MIL.M_DISP + MIL.M_GRAB, MIL.M_DEFAULT, None)
    MilMapContext = MIL.M3dmapAlloc(MilSystem,MIL.M_LASER ,MIL.M_CALIBRATED_CAMERA_LINEAR_MOTION,MIL.M_NULL)
-   MilMapResult = MIL.M3dmapAllocResult(MilSystem,MIL.M_POINT_CLOUD_RESULT ,MIL.M_DEFUALT, MIL.M_NULL )
+   MilMapResult = MIL.M3dmapAllocResult(MilSystem,MIL.M_POINT_CLOUD_RESULT ,MIL.M_DEFAULT, MIL.M_NULL )
+  
    if (MilContainerDisp == MIL.M_NULL) or (MilDisplay == MIL.M_NULL):
      ErrorMessage = MIL.create_c_string_buffer(MIL.M_ERROR_MESSAGE_SIZE)
      ErrorMessageSub1 = MIL.create_c_string_buffer(MIL.M_ERROR_MESSAGE_SIZE)

@@ -5,6 +5,7 @@ import numpy as np          #pip install numpy
 import cv2                  #pip install opencv-python  API :https://docs.opencv.org/master/
 from pcloud import * 
 import d435
+from altiZ import *
 import enum 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -16,13 +17,14 @@ depth_threshold = 0.4 #40 cm
 
 class App():
         
-    def __init__(self, rootdir):
+    def __init__(self, rootdir,camera_enable):
         self.root= rootdir
         self.pcd_path = self.root +"/pointclouds/"
         self.model_path = self.root + "/3dmodels/"
         self.img_path = self.root + "/images/"
-
-        self.camera = d435.D435()
+        self.camera_enable = camera_enable
+        #self.laser = AltiZ()
+        self.camera = d435.D435(self.camera_enable)
         self.pcdmodel = o3d.geometry.PointCloud() # Final pointcloud
         self.pcloud_array = []
         self.plys_generated = 0
@@ -49,8 +51,6 @@ class App():
         else:
             print("Cant save pointcloud: Its Empty")
 
-
-    
 
     def generatePointCloud(self, filetype, name):
         wtf = Pcloud()
@@ -80,7 +80,6 @@ class App():
         wtf.y =  self.camera.y
         wtf.z = self.camera.z 
         wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.camera.depth_frame_open3d,self.camera.intrinsic) # Creating pointcloud from depth 
-        #wtf.x += self.camera.x
         wtf.updateTvector()
         wtf.process_point_cloud( self.model, self.table)
         self.scene.pcd += wtf.pcd
@@ -180,7 +179,7 @@ class App():
         if not (self.scene.pcd.is_empty() or self.model.is_empty()):
             distance = self.scene.pcd.compute_point_cloud_distance(self.model)
             haussdorf = max(distance)
-            print("Haussdorf distance = " + haussdorf + "\n")
+            print("Haussdorf distance = " + str(haussdorf) + "\n")
             df = pd.DataFrame({"distances": distance}) # transform to a dataframe
             # Some graphs
             ax1 = df.boxplot(return_type="axes") # BOXPLOT

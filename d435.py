@@ -13,8 +13,8 @@ pcd_path = "./pointclouds/"
 model_path = "./3dmodels/"
 
 class D435():
-    def __init__(self):
-
+    def __init__(self, camera):
+        
         self.depth_im_width = 848   #Image dimensions
         self.depth_im_height = 480
         self.depth_framerate = 30 
@@ -32,33 +32,47 @@ class D435():
 
         self.config.enable_stream(rs.stream.depth, self.depth_im_width, self.depth_im_height, rs.format.z16, self.depth_framerate) # Setup depth stream
         #self.config.enable_stream(rs.stream.color, self.rgb_im_width, self.rgb_im_height, rs.format.bgr8, self.rgb_framerate)
+        if camera == True:
+            self.begin() 
         
-        self.begin() 
-        
-        self.depth_sensor = self.profile.get_device().first_depth_sensor()
-        self.depth_scale = self.depth_sensor.get_depth_scale()
-      #  print("Depth Scale is: " , self.depth_scale)
+            self.depth_sensor = self.profile.get_device().first_depth_sensor()
+            self.depth_scale = self.depth_sensor.get_depth_scale()
 
-        # We will be removing the background of objects more than
-        #  clipping_distance_in_meters meters away
-       # self.clipping_distance_in_meters = 1 #1 meter
-       # self.clipping_distance = self.clipping_distance_in_meters / self.depth_scale   
-
-        self.profile = self.pipeline.get_active_profile() #The pipeline profile includes a device and a selection of active streams, with specific profiles
-        self.depth_profile = rs.video_stream_profile(self.profile.get_stream(rs.stream.depth)) # Stores details about the profile of a stream.
-        self.depth_intrinsics = self.depth_profile.get_intrinsics()
-        self.w, self.h = self.depth_intrinsics.width, self.depth_intrinsics.height # Width and height of the image in pixels
-        self.fx, self.fy = self.depth_intrinsics.fx,self.depth_intrinsics.fy # Focal length of the image plane as a multiple of pixel width and height 
-        self.px, self.py = self.depth_intrinsics.ppx,self.depth_intrinsics.ppy # Horizontal and vertical coordinate of the principal point of the image, as a pixel offset from the left edge and the top edge, Basicly center of the image
-        self.intrinsic = o3d.camera.PinholeCameraIntrinsic(self.w,self.h,self.fx,self.fy,self.px,self.py) # Create Open3d intrinsic object
+            self.profile = self.pipeline.get_active_profile() #The pipeline profile includes a device and a selection of active streams, with specific profiles
+            self.depth_profile = rs.video_stream_profile(self.profile.get_stream(rs.stream.depth)) # Stores details about the profile of a stream.
+            self.depth_intrinsics = self.depth_profile.get_intrinsics()
+            self.w, self.h = self.depth_intrinsics.width, self.depth_intrinsics.height # Width and height of the image in pixels
+            self.fx, self.fy = self.depth_intrinsics.fx,self.depth_intrinsics.fy # Focal length of the image plane as a multiple of pixel width and height 
+            self.px, self.py = self.depth_intrinsics.ppx,self.depth_intrinsics.ppy # Horizontal and vertical coordinate of the principal point of the image, as a pixel offset from the left edge and the top edge, Basicly center of the image
+            self.intrinsic = o3d.camera.PinholeCameraIntrinsic(self.w,self.h,self.fx,self.fy,self.px,self.py) # Create Open3d intrinsic object
         
         self.plys_generated = 0 # Counter for .ply files generated
         self.imgs_generated = 0
         
         #camera position
+        self.depth_startpoint_offset = 4.2 # Offset to the actualt depth startpoint, following the d435 datasheet.
         self.x = 0.0  
         self.y = 0.0  
         self.z = 0.0 
+    
+    def initCam(self):
+        if self.camera == True:
+            self.pipeline = rs.pipeline()   #The pipeline simplifies the user interaction with the device and computer vision processing modules
+            self.config = rs.config()       # The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
+            self.device = rs.device()
+            self.colorizer = rs.colorizer()
+            self.begin() 
+        
+            self.depth_sensor = self.profile.get_device().first_depth_sensor()
+            self.depth_scale = self.depth_sensor.get_depth_scale()  
+
+            self.profile = self.pipeline.get_active_profile() #The pipeline profile includes a device and a selection of active streams, with specific profiles
+            self.depth_profile = rs.video_stream_profile(self.profile.get_stream(rs.stream.depth)) # Stores details about the profile of a stream.
+            self.depth_intrinsics = self.depth_profile.get_intrinsics()
+            self.w, self.h = self.depth_intrinsics.width, self.depth_intrinsics.height # Width and height of the image in pixels
+            self.fx, self.fy = self.depth_intrinsics.fx,self.depth_intrinsics.fy # Focal length of the image plane as a multiple of pixel width and height 
+            self.px, self.py = self.depth_intrinsics.ppx,self.depth_intrinsics.ppy # Horizontal and vertical coordinate of the principal point of the image, as a pixel offset from the left edge and the top edge, Basicly center of the image
+            self.intrinsic = o3d.camera.PinholeCameraIntrinsic(self.w,self.h,self.fx,self.fy,self.px,self.py) # Create Open3d intrinsic object
     
     # Start streaming
     def begin(self):
