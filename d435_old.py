@@ -4,11 +4,13 @@ import pyrealsense2 as rs   #pip install pyrealsense2   API: https://intelrealse
 import open3d as o3d        #pip install open3d         API: http://www.open3d.org/docs/release/introduction.html                         
 import numpy as np          #pip install numpy
 import cv2                  #pip install opencv-python  API :https://docs.opencv.org/master/
-
+import pcloud
 # Camera class 
 
 VOXEL_SIZE = 0.01 # 1cm # smaller = longer cpu time and worse registration.
 DEPTH_THRESHOLD = 0.5 #50 cm 
+PCD_PATH = "./pointclouds/"
+MODEL_PATH = "./3dmodels/"
 
 class D435():
     def __init__(self, camera_enable):
@@ -69,6 +71,34 @@ class D435():
         self.pipe = None
         self.config = None
     
+    def generatePLY(self):
+        self.mapped_frame = self.depth_frame
+        self.points = self.pc.calculate(self.depth_frame)
+        self.pc.map_to(self.mapped_frame)
+        #Colorize to give ply file texture 
+        colorized = self.colorizer.process(self.frames)
+        # Create save_to_ply object
+        
+        filename = MODEL_PATH+"miwire"+str(self.plys_generated) +".ply"
+        ply = rs.save_to_ply(filename)
+
+        # Set options to the desired values
+        # generate a textual PLY with normals (mesh is already created by default)
+        ply.set_option(rs.save_to_ply.option_ply_binary, False)
+       # ply.set_option(rs.save_to_ply.option_ply_ascii, True)
+        ply.set_option(rs.save_to_ply.option_ply_normals, True)
+        # Apply the processing block to the frameset which contains the depth frame and the texture
+        ply.process(colorized)
+        self.plys_generated = self.plys_generated +1
+        #points.export_to_ply('./out.ply', mapped_frame)
+
+    def generateOpen3DPLY(self):
+        filename = "notmiwire_scene_"+str(self.plys_generated) + ".ply"
+        wtf = pcloud.Pcloud(0,0,0)
+        wtf.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.depth_frame_open3d,self.intrinsic)#,extrinsic=np.ndarray([[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[0.0,0.0,0.0,1.0]]),depth_scale =self.depth_scale) # Creating pointcloud from depth 
+        wtf.process_point_cloud(VOXEL_SIZE, DEPTH_THRESHOLD)
+        o3d.io.write_point_cloud(filename,wtf.pcd,write_ascii=True)
+        self.plys_generated += 1
     
     def stream(self):
         self.frames = self.pipeline.wait_for_frames()# Wait for a coherent pair of frames: depth and color # if fails here it couldn't receive frames
@@ -103,7 +133,11 @@ class D435():
         filename = dir + str(self.imgs_generated)+".png"
         cv2.imwrite(filename, self.images)
         self.imgs_generated= self.imgs_generated + 1
-
+        
+    def snapshot(self):
+        
+        self.generateImg()
+        self.generatePLY()
 
     def updatePosition(self,x,y,z):
         self.x = x
