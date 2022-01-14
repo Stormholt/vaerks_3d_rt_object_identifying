@@ -3,9 +3,10 @@ import pyrealsense2 as rs   #pip install pyrealsense2   API: https://intelrealse
 import open3d as o3d        #pip install open3d         API: http://www.open3d.org/docs/release/introduction.html                         
 import numpy as np          #pip install numpy
 import copy                 #pip install opencv-python  API :https://docs.opencv.org/master/
-from pcloud import * 
+
 import d435
 from altiZ import *
+from pcloud import *
 import enum 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -66,6 +67,7 @@ class App():
         tmp.z = self.camera.z 
         tmp.pcd = o3d.geometry.PointCloud.create_from_depth_image(self.camera.depth_frame_open3d,self.camera.intrinsic) # Creating pointcloud from depth 
         tmp.updateTvector()
+        ("Hello from capture")
         tmp.processPcloud( self.model, self.table)
         self.scene.pcd += tmp.pcd
 
@@ -78,39 +80,6 @@ class App():
             print("Unsupported filetype for saving pointclouds")
             return
         o3d.io.write_point_cloud(filename,self.scene.pcd)
-
-    def gen3Dmodel(self,kpoints,stdRatio, depth, iterations,filetype):
-        if not self.scene.pcd.is_empty():
-            stl_pcd = self.scene.pcd
-            #stl_pcd = stl_pcd.uniform_down_sample(every_k_points=kpoints)
-            #stl_pcd, ind = stl_pcd.remove_statistical_outlier(nb_neighbors=10,std_ratio=stdRatio)
-            bbox1 = o3d.geometry.AxisAlignedBoundingBox((-0.13,-0.13,0),(0.13,0.13,0.01))
-            bottom = stl_pcd.crop(bbox1)
-            try:
-                hull, _ = bottom.compute_convex_hull()  
-                bottom = hull.sample_points_uniformly(number_of_points=10000)
-                bottom.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1,max_nn=30))
-                bottom.orient_normals_towards_camera_location(camera_location=np.array([0., 0., -10.]))
-                bottom.paint_uniform_color([0, 0, 0])
-                _, pt_map = bottom.hidden_point_removal([0,0,-1], 1)
-                bottom = self.bottom.select_by_index(pt_map)
-                stl_pcd = stl_pcd + self.bottom
-            except:
-                print("No bottom could be made") 
-                pass
-            finally:
-                mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(stl_pcd, depth=depth)
-                mesh = mesh.filter_smooth_simple(number_of_iterations=iterations)
-                mesh.scale(1000, center=(0,0,0))
-                mesh.compute_vertex_normals()
-            if filetype == self.Filetype.STL:
-                filename = self.model_path  +"model" + str(self.mesh_generated) + ".stl"
-            elif filetype == self.Filetype.PLY:
-                filename = self.model_path  +"model" + str(self.mesh_generated) + ".ply"
-            else:
-                print("invalid file format")
-                return
-            o3d.io.write_triangle_mesh(filename, mesh)
             
 
     def loadPointcloud2Scene(self, filename, tvector):
@@ -147,8 +116,11 @@ class App():
             df = pd.DataFrame({"distances": distance}) # transform to a dataframe
             # Some graphs
             ax1 = df.boxplot(return_type="axes") # BOXPLOT
+            #ax1.set_ylabel("Distance[mm]")
             ax2 = df.plot(kind="hist", alpha=0.5, bins = 1000) # HISTOGRAM
-            ax3 = df.plot(kind="line") # SERIE
+            ax2.set_xlabel("Distance[mm]")
+           # ax3 = df.plot(kind="line") # SERIE
+            
             plt.show()
         else:
             print("Empty pointcloud given to compare")
@@ -171,15 +143,15 @@ class App():
         #print(str(boundary_6)+ " outside "+ str( box_points[2]))
         tmp_scene = self.scene
         if boundary_1.has_points():
-            tmp_scene.filterPcloud(boundary_1)
+            tmp_scene.filterPcloud(boundary_1,0.1)
         if boundary_2.has_points() != 0 :
-            tmp_scene.filterPcloud(boundary_2)
+            tmp_scene.filterPcloud(boundary_2,0.1)
         if boundary_3.has_points() != 0 :
-            tmp_scene.filterPcloud(boundary_3)
+            tmp_scene.filterPcloud(boundary_3,0.1)
         if boundary_4.has_points() != 0 :
-            tmp_scene.filterPcloud(boundary_4)
+            tmp_scene.filterPcloud(boundary_4,0.1)
         if boundary_5.has_points() != 0 :
-            tmp_scene.filterPcloud(boundary_5)
+            tmp_scene.filterPcloud(boundary_5,0.1)
         model_color = copy.deepcopy(self.model)
         model_color.paint_uniform_color([1., 1., 0.])
         boundary_1.paint_uniform_color([1., 0., 1.])

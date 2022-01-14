@@ -5,17 +5,12 @@ import open3d as o3d        #pip install open3d         API: http://www.open3d.o
 import numpy as np          #pip install numpy
 import cv2                  #pip install opencv-python  API :https://docs.opencv.org/master/
 
-# Camera class 
-
-VOXEL_SIZE = 0.01 # 1cm # smaller = longer cpu time and worse registration.
-DEPTH_THRESHOLD = 0.5 #50 cm 
-
 class D435():
     def __init__(self, camera_enable):
         
-        self.camera_enable = camera_enable 
+        self.camera_enable = camera_enable #Is the camera connected or not.
         
-        self.depth_im_width = 848   #Image dimensions
+        self.depth_im_width = 848   #Image dimensions and framerate
         self.depth_im_height = 480
         self.depth_framerate = 30 
         self.rgb_im_width = 640
@@ -27,9 +22,9 @@ class D435():
         self.device = rs.device()
         self.colorizer = rs.colorizer() # Colorizer filter generates color images based on input depth frame
 
-        self.initCam()
+        self.initCam() # Initialisationonlypossibleif the camera is connected
         
-        self.plys_generated = 0 # Counter for .ply files generated
+        self.plys_generated = 0 # Counter for number of files generated
         self.imgs_generated = 0
         
         #camera position
@@ -40,13 +35,9 @@ class D435():
     
     def initCam(self):
         if self.camera_enable == True:
-            self.pipeline = rs.pipeline()   #The pipeline simplifies the user interaction with the device and computer vision processing modules
-            self.config = rs.config()       # The config allows pipeline users to request filters for the pipeline streams and device selection and configuration.
-            self.device = rs.device()
-            self.colorizer = rs.colorizer()
             
             self.config.enable_stream(rs.stream.depth, self.depth_im_width, self.depth_im_height, rs.format.z16, self.depth_framerate) # Setup depth stream
-            #self.config.enable_stream(rs.stream.color, self.rgb_im_width, self.rgb_im_height, rs.format.bgr8, self.rgb_framerate)
+            self.config.enable_stream(rs.stream.color, self.rgb_im_width, self.rgb_im_height, rs.format.bgr8, self.rgb_framerate)
             
             self.begin() 
 
@@ -70,39 +61,47 @@ class D435():
         self.config = None
     
     
-    def stream(self):
+    def stream(self, depth_enable, rgb_enable):
         self.frames = self.pipeline.wait_for_frames()# Wait for a coherent pair of frames: depth and color # if fails here it couldn't receive frames
         self.frames = self.align.process(self.frames) # Aligns frames
 
-        self.depth_frame = self.frames.get_depth_frame() #Extract frames
-        #self.color_frame = self.frames.get_color_frame()
-    
-        # Convert images to numpy arrays
-        self.depth_image = np.asanyarray(self.depth_frame.get_data())
-        #self.color_image = np.asanyarray(self.color_frame.get_data())
-        self.depth_frame_open3d = o3d.geometry.Image(self.depth_image) # Create opend3d image obejct from depth image
-        # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
-        self.depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.03), cv2.COLORMAP_TURBO) 
-
-
-        self.depth_colormap_dim = self.depth_colormap.shape
-        #self.color_colormap_dim = self.color_image.shape
-        self.images = self.depth_colormap
-        #if self.depth_colormap_dim != self.color_colormap_dim:
-        #    resized_color_image = cv2.resize(self.color_image, dsize=(self.depth_colormap_dim[1], self.depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
-        #    self.images = np.hstack((resized_color_image, self.depth_colormap))
-        #else:
-        #    self.images = np.hstack((self.color_image, self.depth_colormap))
+        if depth_enable == True : 
+            self.depth_frame = self.frames.get_depth_frame() #Extract frames
+            self.depth_image = np.asanyarray(self.depth_frame.get_data())# Convert images to numpy arrays
+            # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
+            self.depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.03), cv2.COLORMAP_TURBO) 
+            self.depth_colormap_dim = self.depth_colormap.shape
+            
+        if rgb_enable == True:
+            self.color_frame = self.frames.get_color_frame()
+            self.color_image = np.asanyarray(self.color_frame.get_data())
+            self.color_colormap_dim = self.color_image.shape
         
+        if depth_enable == True and rgb_enable == True:
+            if self.depth_colormap_dim != self.color_colormap_dim:
+                resized_color_image = cv2.resize(self.color_image, dsize=(self.depth_colormap_dim[1], self.depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
+                self.images = np.hstack((resized_color_image, self.depth_colormap))
+            else:
+                self.images = np.hstack((self.color_image, self.depth_colormap))
+        elif depth_enable == True and rgb_enable == False:
+            self.images = self.depth_colormap
+        elif depth_enable == False and rgb_enable == True:
+            self.images = self.color_image
+        else :
+            print("Must enable either depth, RGB or both to use stream method")
+            return
         # Show images
         cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         cv2.imshow('RealSense', self.images)
 
     def generateImg(self, dir):
-         
-        filename = dir + str(self.imgs_generated)+".png"
-        cv2.imwrite(filename, self.images)
-        self.imgs_generated= self.imgs_generated + 1
+        if self.images == None:
+            print("stream function must be called first")
+            return
+        else:
+            filename = dir + str(self.imgs_generated)+".png"
+            cv2.imwrite(filename, self.images)
+            self.imgs_generated= self.imgs_generated + 1
 
 
     def updatePosition(self,x,y,z):

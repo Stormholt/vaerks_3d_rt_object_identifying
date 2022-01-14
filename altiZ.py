@@ -18,8 +18,6 @@ class AltiZ():
         MdigGrab(self.MilDigitizer,self. MilGrabId) # Grab image
         MbufConvert3d(self.MilGrabId, self.MilImageId, M_NULL, M_DEFAULT,M_DEFAULT)# Convert to 3D-processable and displayable data, required to export to file
         MbufExport(filename, M_PLY_ASCII, self.MilImageId) #Export to a ascii .ply file.
-    
-    
         
     def freeAltiz(self):
         #Free container and contexts.

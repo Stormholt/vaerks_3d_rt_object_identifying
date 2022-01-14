@@ -1,0 +1,7 @@
+#vaerksValidator hal file
+
+#Scanning in-progress safety signal. Once declared like this it can be reached anywhere in the LinuxCNC to be used in a security logic context.
+net ui-scanning-enable         <=  controls.scanning-enable
+
+
+

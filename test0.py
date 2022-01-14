@@ -18,21 +18,23 @@ try:
     main.camera.z = -24 #+ main.camera.depth_startpoint_offset #265
     
     while True:
-        main.camera.stream()
+        main.camera.stream(True, False)
         key = cv2.waitKey(1)
         if key == 27:
             break
         if key == 32:
+            print("hello")
             main.captureScenePointcloud()
-           
+            print("hello 0")
             print(main.plys_generated)
             main.camera.y += 4.0
 finally:
-    main.saveScenePointcloud(main.Filetype.PLY,"comparison-scene-test0")
+    main.saveScenePointcloud(main.Filetype.PLY,"09_01_2021_test_inverted")
     model_color = copy.deepcopy(main.model)
     model_color.paint_uniform_color([1., 0.706, 0.])
     o3d.visualization.draw_geometries([main.scene.pcd + model_color])
     main.compareScene2Model()
+    main.compareScene2ModelBbox()
     main.camera.release()
 
 
