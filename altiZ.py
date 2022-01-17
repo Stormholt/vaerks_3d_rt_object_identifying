@@ -12,13 +12,15 @@ class AltiZ():
         self.MilGrabId=  MbufAllocContainer(self.MilSystem, M_GRAB+ M_PROC + M_DISP , M_DEFAULT, None) # Container for grabbing the image
         self.MilImageId = MbufAllocDefault(self.MilSystem,self.MilDigitizer, M_PROC, M_DEFAULT, M_DEFAULT, None ) # Container to export pointcloud
 
+    #Generate pointcloud 
     def getPointcloud(self, filename):
-        filename = MIL_TEXT("C:/Users/Stormholt/Documents/Thesis/pointclouds/matrox-pytest.ply")
+        mil_filename = MIL_TEXT(filename)
 
         MdigGrab(self.MilDigitizer,self. MilGrabId) # Grab image
         MbufConvert3d(self.MilGrabId, self.MilImageId, M_NULL, M_DEFAULT,M_DEFAULT)# Convert to 3D-processable and displayable data, required to export to file
-        MbufExport(filename, M_PLY_ASCII, self.MilImageId) #Export to a ascii .ply file.
-        
+        MbufExport(mil_filename, M_PLY_ASCII, self.MilImageId) #Export to a ascii .ply file.
+    
+    # Free allocated resources
     def freeAltiz(self):
         #Free container and contexts.
         MbufFree(self.MilImageId)

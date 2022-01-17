@@ -22,10 +22,12 @@ class D435():
         self.device = rs.device()
         self.colorizer = rs.colorizer() # Colorizer filter generates color images based on input depth frame
 
-        self.initCam() # Initialisationonlypossibleif the camera is connected
+        self.initCam() # Initialisation only possibleif the camera is connected
         
         self.plys_generated = 0 # Counter for number of files generated
         self.imgs_generated = 0
+        
+        self.depth_frame_open3d = None # Used to generate pointclouds from depth image
         
         #camera position
         self.depth_startpoint_offset = 4.2 # Offset to the actualt depth startpoint, following the d435 datasheet.
@@ -33,6 +35,7 @@ class D435():
         self.y = 0.0  
         self.z = 0.0 
     
+    #Initialisez the variables only useable when the camera is connected
     def initCam(self):
         if self.camera_enable == True:
             
@@ -60,7 +63,7 @@ class D435():
         self.pipe = None
         self.config = None
     
-    
+    # Streaming pipeline, should be inside a loop
     def stream(self, depth_enable, rgb_enable):
         self.frames = self.pipeline.wait_for_frames()# Wait for a coherent pair of frames: depth and color # if fails here it couldn't receive frames
         self.frames = self.align.process(self.frames) # Aligns frames
@@ -68,6 +71,7 @@ class D435():
         if depth_enable == True : 
             self.depth_frame = self.frames.get_depth_frame() #Extract frames
             self.depth_image = np.asanyarray(self.depth_frame.get_data())# Convert images to numpy arrays
+            self.depth_frame_open3d = o3d.geometry.Image(self.depth_image) # Create opend3d image obejct from depth image
             # Apply colormap on depth image (image must be converted to 8-bit per pixel first)
             self.depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(self.depth_image, alpha=0.03), cv2.COLORMAP_TURBO) 
             self.depth_colormap_dim = self.depth_colormap.shape
@@ -78,7 +82,7 @@ class D435():
             self.color_colormap_dim = self.color_image.shape
         
         if depth_enable == True and rgb_enable == True:
-            if self.depth_colormap_dim != self.color_colormap_dim:
+            if self.depth_colormap_dim != self.color_colormap_dim: # If the images are not the same dimensions the RGB images is resized.
                 resized_color_image = cv2.resize(self.color_image, dsize=(self.depth_colormap_dim[1], self.depth_colormap_dim[0]), interpolation=cv2.INTER_AREA)
                 self.images = np.hstack((resized_color_image, self.depth_colormap))
             else:
@@ -91,8 +95,8 @@ class D435():
             print("Must enable either depth, RGB or both to use stream method")
             return
         # Show images
-        cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
-        cv2.imshow('RealSense', self.images)
+        cv2.namedWindow('RealSense D435', cv2.WINDOW_AUTOSIZE)
+        cv2.imshow('RealSense D435', self.images)
 
     def generateImg(self, dir):
         if self.images == None:
@@ -102,7 +106,6 @@ class D435():
             filename = dir + str(self.imgs_generated)+".png"
             cv2.imwrite(filename, self.images)
             self.imgs_generated= self.imgs_generated + 1
-
 
     def updatePosition(self,x,y,z):
         self.x = x

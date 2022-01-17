@@ -2,4 +2,4 @@
 
 Diploma Thesis at the Technical University of Denmark, in collatoration with Vaerks Aps
 
-Uses 3d camera technology to verify the setup in the Vaerk's CNC machine
+Uses 3d camera technology to verify the setup in the Vaerk's CNC machine SimpleMill
